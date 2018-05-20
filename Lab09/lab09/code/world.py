@@ -1,13 +1,5 @@
-'''A 2d world that supports agents with steering behaviour
-
-Created for COS30002 AI for Games by Clinton Woodward cwoodward@swin.edu.au
-
-'''
-
-from vector2d import Vector2D
 from matrix33 import Matrix33
-from graphics import egi
-
+from agent import *
 
 class World(object):
     def __init__(self, cx, cy):
@@ -15,36 +7,32 @@ class World(object):
         self.cy = cy
         self.target = Vector2D(cx / 2, cy / 2)
         self.hunter = None
-        self.agents = []
+        self.prey = None
+        self.bullets = []
         self.paused = True
         self.show_info = True
 
     def update(self, delta):
         if not self.paused:
-            for agent in self.agents:
-                agent.update(delta)
+            self.prey.update(delta)
+            self.hunter.update()
+            for bullet in self.bullets:
+                bullet.update(delta)
 
     def render(self):
-        for agent in self.agents:
-            if agent is not self.hunter:
-                agent.render()
-            else:
-                agent.render("GREEN")
+        self.prey.render()
+        self.hunter.render()
+        for bullet in self.bullets:
+            bullet.render()
 
+        #if self.target:
+        #    egi.red_pen()
+        #    egi.cross(self.target, 10)
 
-        for obs in self.obstacles:
-            obs.render()
-
-        if self.target:
-            egi.red_pen()
-            egi.cross(self.target, 10)
-
-        if self.show_info:
-            infotext = ', '.join(set(agent.mode for agent in self.agents))
-            infotext += ', '
-            infotext += ' , '.join(set(agent.attribute for agent in self.agents))
-            egi.white_pen()
-            egi.text_at_pos(0, 0, infotext)
+        #if self.show_info:
+        #    infotext = ', '.join(set(self.agent.mode))
+        #    egi.white_pen()
+        #    egi.text_at_pos(0, 0, infotext)
 
     def wrap_around(self, pos):
         ''' Treat world as a toroidal space. Updates parameter object pos '''
@@ -85,3 +73,6 @@ class World(object):
 
         return wld_pt
 
+    def add(self, bullet):
+        self.bullets.append(bullet)
+        bullet.world = self
