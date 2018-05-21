@@ -15,9 +15,12 @@ class World(object):
     def update(self, delta):
         if not self.paused:
             self.prey.update(delta)
-            self.hunter.update()
+            self.hunter.update(delta)
             for bullet in self.bullets:
-                bullet.update(delta)
+                if bullet.active is True:
+                    bullet.update(delta)
+                else:
+                    self.bullets.remove(bullet)
 
     def render(self):
         self.prey.render()

@@ -5,7 +5,6 @@ from math import *
 from random import random, randrange, uniform
 
 
-
 GUN_MODES = {
     KEY._1: 'Rifle',
     KEY._2: 'Rocket',
@@ -13,25 +12,38 @@ GUN_MODES = {
     KEY._4: 'Grenade',
 }
 
+GUN_COOLDOWNS = {
+    'Rifle': 0.5,
+    'Rocket': 2,
+    'Pistol': 0.75,
+    'Grenade': 1.25
+}
+
 
 class Hunter(object):
-    def __init__(self, world=None):
+    def __init__(self, world=None, mode='Rifle'):
         self.world = world
-        self.pos = Vector2D(world.cx/2,world.cy/2)
+        self.mode = mode
+        self.pos = Vector2D(world.cx/2, world.cy/2)
         self.radius = 10
-        self.gun = Gun(self.pos, world)
+        self.gun = Gun(self.pos, world, mode)
+        self.time = 0
+        self.aim = True
 
+    def update(self, delta):
+        if self.mode is not self.gun.mode:
+            self.gun.mode = self.mode
 
-    def update(self):
-        target = self.world.prey
-        self.gun.fire(target)
+        self.time += delta
+        if self.time >= GUN_COOLDOWNS[self.gun.mode]:
+            target = self.world.prey.pos
+            self.gun.fire(target)
+            self.time = 0
 
     def render(self):
         egi.green_pen()
         egi.set_stroke(2)
         egi.circle(self.pos, self.radius, True)
-
-
 
 
 
@@ -49,6 +61,7 @@ class Prey(object):
             Point2D(1.0, 0.0),
             Point2D(-1.0, -0.6)
         ]
+        self.color = 'RED'
 
         self.scale = Vector2D(scale, scale)
         self.wander_target = Vector2D(1, 0)
@@ -79,7 +92,7 @@ class Prey(object):
             self.world.wrap_around(self.pos)
 
     def render(self):
-        egi.red_pen()
+        egi.set_pen_color(name=self.color)
         pts = self.world.transform_points(self.shape, self.pos,
                                           self.heading, self.side, self.scale)
         # draw it!
@@ -107,35 +120,58 @@ class Prey(object):
 
 
 class Gun(object):
+    BULLET_VELOCITY = {
+        'Rifle': 500,
+        'Pistol': 500,
+        'Rocket': 300,
+        'Grenade': 250
+    }
+
+
     def __init__(self, firing_pos, world=None, mode="Rifle"):
         self.init_pos = Vector2D.copy(firing_pos)
         self.world = world
         self.mode = mode
+        self.bullet_speed = self.BULLET_VELOCITY[mode]
 
-    def fire(self, target):
+    def aim(self):
+        timeToHit = Vector2D.distance(self.world.prey.pos, self.init_pos) / self.bullet_speed
+        return self.world.prey.pos + self.world.prey.vel * timeToHit
+
+    def fire(self, target_pos):
+        enemy_pos = target_pos
+        if self.world.hunter.aim is True:
+            enemy_pos = self.aim()
 
         if self.mode is "Rifle":
-            self.world.add(RifleBullet(self.init_pos, target.pos))
+            self.world.add(RifleBullet(self.init_pos, enemy_pos))
         elif self.mode is "Pistol":
-            self.world.add(PistolBullet(self.init_pos, target.pos))
+            self.world.add(PistolBullet(self.init_pos, enemy_pos))
         elif self.mode is "Rocket":
-            self.world.add(RocketBullet(self.init_pos, target.pos))
+            self.world.add(RocketBullet(self.init_pos, enemy_pos))
         elif self.mode is "Grenade":
-            self.world.add(GrenadeBullet(self.init_pos, target.pos))
+            self.world.add(GrenadeBullet(self.init_pos, enemy_pos))
 
 
 class Bullet(object):
     def __init__(self, firing_pos, target_pos):
-        self.init_pos = firing_pos
-        self.pos = firing_pos
-        self.direction = Vector2D.normalise(firing_pos - target_pos)
+        self.init_pos = Vector2D.copy(firing_pos)
+        self.pos = self.init_pos
+        self.direction = Vector2D.normalise(target_pos - self.init_pos)
         self.velocity = 10
         self.radius = 5
         self.collision = None
+        self.active = True
 
     def update(self, delta):
        self.pos += (self.direction * self.velocity) * delta
-
+       if (self.pos.x > self.world.cx or self.pos.x < 0) or (self.pos.y > self.world.cy or self.pos.y < 0):
+           self.active = False
+           return
+       elif Vector2D.distance(self.pos, self.world.prey.pos) <= (self.radius - 10)**2:
+           self.active = False
+           self.world.prey.color = 'BLUE'
+           return
 
 
     def render(self):
@@ -147,26 +183,26 @@ class Bullet(object):
 class RifleBullet(Bullet):
     def __init__(self, firing_pos, target_pos):
         Bullet.__init__(self, firing_pos, target_pos)
-        self.radius = 10
-        self.velocity = 15
+        self.radius = 12
+        self.velocity = 500
 
 
 class PistolBullet(Bullet):
     def __init__(self, firing_pos, target_pos):
-        Bullet.__init__(firing_pos, target_pos)
-        self.radius = 10
-        self.velocity = 25
+        Bullet.__init__(self, firing_pos, target_pos + Vector2D(randrange(-50,50),randrange(-50,50)))
+        self.radius = 12
+        self.velocity = 500
 
 
 class RocketBullet(Bullet):
     def __init__(self, firing_pos, target_pos):
-        Bullet.__init__(firing_pos, target_pos)
+        Bullet.__init__(self, firing_pos, target_pos)
         self.radius = 15
-        self.velocity = 10
+        self.velocity = 300
 
 
 class GrenadeBullet(Bullet):
     def __init__(self, firing_pos, target_pos):
-        Bullet.__init__(firing_pos, target_pos)
+        Bullet.__init__(self,firing_pos, target_pos + Vector2D(randrange(-50,50),randrange(-50,50)))
         self.radius = 15
-        self.velocity = 10
+        self.velocity = 250

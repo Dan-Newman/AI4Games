@@ -12,7 +12,8 @@ def on_key_press(symbol, modifiers):
 
     elif symbol in GUN_MODES:
         world.hunter.mode = GUN_MODES[symbol]
-
+    elif symbol == KEY.SPACE:
+        world.hunter.aim = not world.hunter.aim
     # Toggle debug force line info on the agent
     elif symbol == KEY.I:
         for agent in world.agents:
