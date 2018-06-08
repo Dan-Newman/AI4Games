@@ -344,8 +344,11 @@ class PlanetWarsWindow(window.Window):
 
 
 if __name__ == '__main__':
-    gamestate = open('./maps/map5.txt').read()
-    players = ['Lambdo', 'Rando']
-    window = PlanetWarsWindow(gamestate=gamestate, players=players, max_game_length=500)
-    app.run()
-    window.game.logger.flush()
+    levels = ['./maps/map1.txt','./maps/map2.txt','./maps/map3.txt','./maps/map4.txt','./maps/map5.txt'
+        ,'./maps/map6.txt','./maps/map7.txt','./maps/map8.txt','./maps/map9.txt']
+    for i in range(0,8):
+        gamestate = open(levels[i]).read()
+        players = ['TA1', 'Rando']
+        window = PlanetWarsWindow(gamestate=gamestate, players=players, max_game_length=500)
+        app.run()
+        window.game.logger.flush()

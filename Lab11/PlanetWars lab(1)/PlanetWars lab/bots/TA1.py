@@ -45,7 +45,7 @@ There is also a player specific log if you want to leave a message
 
 '''
 
-class Blanko(object):
+class TA1(object):
     def update(self, gameinfo):
 
         #Keep a list of my planets and non-my planets positions
@@ -53,9 +53,30 @@ class Blanko(object):
             return
 
         planet_details = {}
-        for planet_id, planet in gameinfo.planets.items()
+        for planet_id, planet in gameinfo.planets.items():
+        # Find a list of the planet with the a short distance away from my planets
+            planet_details[planet_id] = {
+                'ID': planet_id,
+                'reference': planet,
+                'owner': 'me' if planet_id in gameinfo.my_planets else 'enemy' if planet_id in gameinfo.enemy_planets else 'neutral',
+                'fleet_size': planet.num_ships,
+                'ships_required_to_take': 0 if planet_id in gameinfo.my_planets and planet.num_ships > 500
+                else 100 if planet_id in gameinfo.my_planets and planet.num_ships < 500 else planet.num_ships,
+            }
+        for enemy_fleet in gameinfo.enemy_fleets.values():
+            planet_details[enemy_fleet.dest.id]['ships_required_to_take'] += enemy_fleet.num_ships
 
-        if gameinfo.my_planets and gameinfo.not_my_planets:
-            #Find a list of the planet with the a short distance away from my planets
 
-        pass
+
+
+        source_planet_details = list(filter(lambda planet: planet['owner'] is 'me', planet_details.values()))
+        target_planet_details = list(filter(lambda planet: planet['owner'] is not 'me', planet_details.values()))
+
+        for i in range(0,source_planet_details.__len__()):
+            if i < target_planet_details.__len__():
+                gameinfo.planet_order(source_planet_details[i]['reference'], target_planet_details[i]['reference'], target_planet_details[i]['ships_required_to_take'])
+            else:
+                return
+
+
+
